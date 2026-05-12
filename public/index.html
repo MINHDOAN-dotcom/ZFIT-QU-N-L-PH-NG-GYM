@@ -1,0 +1,1943 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZFit - Gym Management System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #dc2626;
+            --primary-dark: #991b1b;
+            --secondary: #111827;
+            --accent: #f87171;
+            --bg: #ffffff;
+            --surface: rgba(255,255,255,0.96);
+            --surface-hover: #f7f1f1;
+            --text: #111827;
+            --text-secondary: #374151;
+            --text-muted: #6b7280;
+            --border: rgba(17,24,39,0.12);
+            --shadow: 0 1px 3px rgba(17,24,39,0.08), 0 1px 2px rgba(17,24,39,0.04);
+            --shadow-lg: 0 10px 15px -3px rgba(17,24,39,0.12), 0 4px 6px -2px rgba(17,24,39,0.08);
+            --sidebar-bg: #ffffff;
+            --sidebar-text: #111827;
+            --sidebar-hover: #fee2e2;
+            --pattern: rgba(220,38,38,0.08);
+        }
+
+        [data-theme="dark"] {
+            --primary: #dc2626;
+            --primary-dark: #991b1b;
+            --secondary: #f8fafc;
+            --accent: #f87171;
+            --bg: #050505;
+            --surface: #111827;
+            --surface-hover: #1f2937;
+            --text: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --border: #2d3748;
+            --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.24);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.3), 0 4px 6px -2px rgba(0,0,0,0.22);
+            --sidebar-bg: #070a12;
+            --sidebar-text: #f8fafc;
+            --sidebar-hover: #1f2937;
+            --pattern: rgba(220,38,38,0.14);
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            display: flex;
+            min-height: 100vh;
+            background: var(--bg);
+            color: var(--text);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        input, textarea, select {
+            user-select: text;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: radial-gradient(circle at 12% 18%, var(--pattern), transparent 22%),
+                              radial-gradient(circle at 88% 12%, var(--pattern), transparent 20%),
+                              repeating-linear-gradient(135deg, transparent 0 24px, rgba(220,38,38,0.02) 24px 26px);
+            opacity: 0.7;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Modern Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 10px;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--sidebar-bg);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            z-index: 100;
+            transition: all 0.3s ease;
+            overflow-y: auto;
+        }
+
+        .sidebar .logo {
+            padding: 24px 20px;
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            color: var(--sidebar-text);
+            letter-spacing: -0.5px;
+        }
+
+        .sidebar .logo span {
+            color: var(--primary);
+        }
+
+        .sidebar nav li {
+            list-style: none;
+            margin: 4px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            transition: all 0.2s ease;
+            color: var(--sidebar-text);
+            font-weight: 500;
+            user-select: none;
+        }
+
+        .sidebar nav li i {
+            width: 20px;
+            font-size: 18px;
+            opacity: 0.8;
+        }
+
+        .sidebar nav li:hover {
+            background: var(--sidebar-hover);
+            transform: translateX(2px);
+        }
+
+        .sidebar nav li.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: var(--shadow);
+        }
+
+        .sidebar-footer {
+            padding: 20px 16px;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 24px;
+            overflow-y: auto;
+            background: var(--bg);
+        }
+
+        .section {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 600;
+            color: var(--text);
+            letter-spacing: -0.5px;
+        }
+
+        .date-badge {
+            background: var(--surface);
+            padding: 8px 16px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            font-weight: 500;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .action-grid,
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 18px;
+            margin-bottom: 24px;
+        }
+
+        .overview-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 22px;
+            text-align: left;
+            color: var(--text);
+            box-shadow: var(--shadow);
+            transition: all 0.25s ease;
+            min-height: 140px;
+        }
+
+        .overview-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .overview-card h4 {
+            margin: 0 0 10px;
+            font-size: 18px;
+        }
+
+        .overview-card p {
+            margin: 0;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .overview-value {
+            font-size: 28px;
+            font-weight: 700;
+            margin-top: 12px;
+            color: var(--text);
+        }
+
+        .overview-change {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 12px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .overview-change.positive {
+            color: #16a34a;
+        }
+
+        .overview-change.negative {
+            color: #b91c1c;
+        }
+
+        .promo-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .promo-label {
+            display: inline-block;
+            margin-bottom: 14px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: var(--primary);
+        }
+
+        .promo-card h4 {
+            margin: 0 0 10px;
+            font-size: 18px;
+        }
+
+        .promo-card p {
+            margin: 0;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .promo-red .promo-label {
+            background: #dc2626;
+        }
+
+        .promo-dark .promo-label {
+            background: #111827;
+        }
+
+        .promo-light .promo-label {
+            background: #f97316;
+        }
+
+        .promo-banner .promo-label {
+            background: #be123c;
+        }
+
+        .settings-float {
+            position: fixed;
+            left: 16px;
+            bottom: 24px;
+            z-index: 1050;
+        }
+
+        .settings-toggle {
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            border: none;
+            background: var(--primary);
+            color: white;
+            cursor: pointer;
+            box-shadow: var(--shadow-lg);
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .settings-toggle:hover {
+            transform: translateY(-2px);
+        }
+
+        .settings-panel {
+            position: fixed;
+            left: 16px;
+            bottom: 90px;
+            width: 280px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            box-shadow: var(--shadow-lg);
+            padding: 18px;
+            z-index: 1050;
+            display: none;
+        }
+
+        @media (max-width: 900px) {
+            .settings-float,
+            .settings-panel {
+                left: 20px;
+            }
+        }
+
+        .settings-panel.active {
+            display: block;
+        }
+
+        .settings-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            font-weight: 700;
+        }
+
+        .settings-note {
+            margin: 0 0 16px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .settings-panel .settings-actions {
+            justify-content: space-between;
+        }
+
+        .action-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .action-card h4 {
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .action-card p {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .action-primary {
+            border-color: rgba(220,38,38,0.18);
+        }
+
+        .action-secondary {
+            border-color: rgba(17,24,39,0.12);
+        }
+
+        .action-accent {
+            border-color: rgba(248,113,113,0.18);
+        }
+
+        .action-info {
+            border-color: rgba(37,99,235,0.18);
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 18px;
+            padding: 20px;
+        }
+
+        .settings-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 22px;
+            box-shadow: var(--shadow);
+        }
+
+        .settings-card h4 {
+            margin-bottom: 12px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .settings-card p {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .settings-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .theme-choice-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: transparent;
+        }
+
+        .theme-choice-btn.active:hover {
+            background: var(--primary-dark);
+        }
+
+        button.action-card {
+            border: none;
+            text-align: left;
+            padding: 20px;
+            width: 100%;
+        }
+
+        button.action-card h4, button.action-card p {
+            margin: 0;
+        }
+
+        button.action-card:focus {
+            outline: none;
+        }
+
+        .action-card i {
+            font-size: 20px;
+            margin-top: 2px;
+            color: var(--primary);
+        }
+
+        .action-card div {
+            flex: 1;
+        }
+
+        .settings-card h4 i {
+            color: var(--primary);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-info h3 {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-info p {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .stat-icon {
+            width: 56px;
+            height: 56px;
+            background: var(--primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .stat-icon i {
+            font-size: 24px;
+        }
+
+        /* Charts */
+        .chart-container {
+            background: var(--surface);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            margin-top: 20px;
+        }
+
+        .chart-container h3 {
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        /* Table */
+        .table-wrapper {
+            background: var(--surface);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .toolbar {
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            max-width: 300px;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 12px 10px 40px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            background: var(--bg);
+            color: var(--text);
+            transition: all 0.2s ease;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            text-decoration: none;
+            user-select: none;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--surface-hover);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--surface);
+            transform: translateY(-1px);
+        }
+
+        .btn-info {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        .btn-warning {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #d97706;
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            padding: 16px 20px;
+            text-align: left;
+            background: var(--surface-hover);
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        tr {
+            transition: all 0.2s ease;
+        }
+
+        tr:hover {
+            background: var(--surface-hover);
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-active {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        [data-theme="dark"] .badge-active {
+            background: #14532d;
+            color: #bbf7d0;
+        }
+
+        .badge-inactive {
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
+        [data-theme="dark"] .badge-inactive {
+            background: #450a0a;
+            color: #fca5a5;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: var(--surface);
+            padding: 32px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .modal-header h2 {
+            font-size: 24px;
+        }
+
+        .close-btn {
+            font-size: 28px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            transform: rotate(90deg);
+            color: var(--primary);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            background: var(--bg);
+            color: var(--text);
+            transition: all 0.2s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 9999;
+            animation: slideIn 0.3s ease;
+            box-shadow: var(--shadow-lg);
+            font-size: 14px;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .toast-success {
+            background: var(--secondary);
+        }
+
+        .toast-error {
+            background: #ef4444;
+        }
+
+        .toast-info {
+            background: var(--primary);
+        }
+
+        /* Workout History */
+        .workout-history {
+            background: var(--surface-hover);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 8px;
+        }
+
+        .workout-item {
+            background: var(--surface);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border);
+        }
+
+        /* Responsive */
+@media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                width: 280px;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 15px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .toolbar {
+                flex-direction: column;
+            }
+
+            .search-box {
+                max-width: 100%;
+                width: 100%;
+            }
+
+            .btn-group {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .btn {
+                flex: 1;
+                justify-content: center;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+            position: relative;
+        }
+
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 30px;
+            height: 30px;
+            margin: -15px 0 0 -15px;
+            border: 3px solid var(--primary);
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Workout View Modal */
+        .workout-detail {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .workout-detail h4 {
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .workout-detail p {
+            margin: 5px 0;
+        }
+
+        .view-workout-btn {
+            background: var(--primary);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+
+        .view-workout-btn:hover {
+            background: var(--primary-dark);
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar" id="sidebar">
+    <div class="logo">
+        💪 Z<span>FIT</span>
+    </div>
+    <nav>
+        <li onclick="switchTab('dashboard', this)" class="active">
+            <i class="fas fa-chart-line"></i>
+            <span>Tổng Quan</span>
+        </li>
+        <li onclick="switchTab('members', this)">
+            <i class="fas fa-users"></i>
+            <span>Hội Viên</span>
+        </li>
+        <li onclick="switchTab('packages', this)">
+            <i class="fas fa-boxes"></i>
+            <span>Gói Tập</span>
+        </li>
+        <li onclick="switchTab('workouts', this)">
+            <i class="fas fa-calendar-check"></i>
+            <span>Lịch Tập</span>
+        </li>
+        <li onclick="switchTab('settings', this)">
+            <i class="fas fa-cog"></i>
+            <span>Cài Đặt</span>
+        </li>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="theme-toggle">
+            <button class="btn btn-outline" onclick="toggleTheme()" style="width: 100%;">
+                <i class="fas fa-moon"></i> Chế Độ Tối
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="header">
+        <h1 class="page-title" id="pageTitle">Tổng Quan</h1>
+        <div class="date-badge">
+            <i class="fas fa-calendar-alt"></i>
+            <span id="currentDate"></span>
+        </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div id="dashboard" class="section active">
+        <div class="overview-grid" id="overviewGrid">
+            <!-- Overview cards will be loaded here -->
+        </div>
+        <div class="stats-grid" id="statsGrid">
+            <!-- Stats will be loaded here -->
+        </div>
+        <div class="chart-container">
+            <h3>📈 Thống Kê Hội Viên Theo Tháng</h3>
+            <canvas id="memberChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Members Section -->
+    <div id="members" class="section">
+        <div class="table-wrapper">
+            <div class="toolbar">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="memberSearch" placeholder="Tìm kiếm hội viên..." oninput="loadMembers()">
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="openMemberModal()">
+                        <i class="fas fa-plus"></i> Thêm Hội Viên
+                    </button>
+                    <button class="btn btn-success" onclick="exportToExcel('members')">
+                        <i class="fas fa-download"></i> Xuất Excel
+                    </button>
+                    <button class="btn btn-warning" onclick="refreshMembers()">
+                        <i class="fas fa-sync"></i> Làm Mới
+                    </button>
+                </div>
+            </div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th><th>Họ Tên</th><th>SĐT</th><th>Email</th>
+                            <th>Gói Tập</th><th>Ngày ĐK</th><th>Ngày Hết Hạn</th>
+                            <th>Lịch Sử Tập</th><th>Trạng Thái</th><th>Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="membersTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Packages Section -->
+    <div id="packages" class="section">
+        <div class="table-wrapper">
+            <div class="toolbar">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="packageSearch" placeholder="Tìm kiếm gói tập..." oninput="loadPackages()">
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="openPackageModal()">
+                        <i class="fas fa-plus"></i> Thêm Gói Tập
+                    </button>
+                    <button class="btn btn-success" onclick="exportToExcel('packages')">
+                        <i class="fas fa-download"></i> Xuất Excel
+                    </button>
+                    <button class="btn btn-warning" onclick="loadPackages()">
+                        <i class="fas fa-sync"></i> Làm Mới
+                    </button>
+                </div>
+            </div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr><th>ID</th><th>Tên Gói</th><th>Giá</th><th>Thời Hạn</th><th>Mô Tả</th><th>Thao Tác</th></tr>
+                    </thead>
+                    <tbody id="packagesTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workouts Section -->
+    <div id="workouts" class="section">
+        <div class="table-wrapper">
+            <div class="toolbar">
+                <div class="search-box">
+                    <i class="fas fa-calendar"></i>
+                    <input type="date" id="workoutDate" onchange="loadWorkoutsByDate()">
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="openLogWorkoutModal()">
+                        <i class="fas fa-plus"></i> Ghi Nhận Tập
+                    </button>
+                    <button class="btn btn-warning" onclick="loadWorkoutsByDate()">
+                        <i class="fas fa-sync"></i> Làm Mới
+                    </button>
+                </div>
+            </div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr><th>Hội Viên</th><th>SĐT</th><th>Bài Tập</th><th>Thời Gian</th><th>Calo</th><th>Ghi Chú</th><th>Thời Gian Tập</th></tr>
+                    </thead>
+                    <tbody id="workoutsTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="settings-float">
+    <button class="settings-toggle" onclick="toggleSettingsPanel()">
+        <i class="fas fa-cog"></i>
+    </button>
+</div>
+
+<div class="settings-panel" id="settingsPanel">
+    <div class="settings-panel-header">
+        <span>Cài Đặt</span>
+        <button class="close-btn" onclick="toggleSettingsPanel()">&times;</button>
+    </div>
+    <p class="settings-note">Chọn giao diện để thay đổi phong cách.</p>
+    <div class="settings-actions">
+        <button class="btn btn-outline theme-choice-btn" data-theme="light" onclick="setTheme('light')">Light</button>
+        <button class="btn btn-outline theme-choice-btn" data-theme="dark" onclick="setTheme('dark')">Dark</button>
+    </div>
+</div>
+
+<!-- Member Modal -->
+<div id="memberModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="memberModalTitle">Thêm Hội Viên</h2>
+            <span class="close-btn" onclick="closeModal('memberModal')">&times;</span>
+        </div>
+        <form id="memberForm">
+            <input type="hidden" id="memberId">
+            <div class="form-group">
+                <label>Họ Tên *</label>
+                <input type="text" id="memberName" required>
+            </div>
+            <div class="form-group">
+                <label>Số Điện Thoại *</label>
+                <input type="text" id="memberPhone" required>
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="memberEmail">
+            </div>
+            <div class="form-group">
+                <label>Gói Tập *</label>
+                <select id="memberPackage" required></select>
+            </div>
+            <div class="form-group">
+                <label>Ngày Đăng Ký</label>
+                <input type="date" id="memberRegDate">
+            </div>
+            <div class="btn-group">
+                <button type="submit" class="btn btn-success" style="flex:1">
+                    <i class="fas fa-save"></i> Lưu
+                </button>
+                <button type="button" class="btn btn-danger" onclick="closeModal('memberModal')" style="flex:1">
+                    <i class="fas fa-times"></i> Hủy
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Package Modal -->
+<div id="packageModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="packageModalTitle">Thêm Gói Tập</h2>
+            <span class="close-btn" onclick="closeModal('packageModal')">&times;</span>
+        </div>
+        <form id="packageForm">
+            <input type="hidden" id="packageId">
+            <div class="form-group">
+                <label>Tên Gói *</label>
+                <input type="text" id="packageName" required>
+            </div>
+            <div class="form-group">
+                <label>Giá (VNĐ) *</label>
+                <input type="number" id="packagePrice" required>
+            </div>
+            <div class="form-group">
+                <label>Thời Hạn (tháng) *</label>
+                <input type="number" id="packageDuration" required>
+            </div>
+            <div class="form-group">
+                <label>Mô Tả</label>
+                <textarea id="packageDesc" rows="3"></textarea>
+            </div>
+            <div class="btn-group">
+                <button type="submit" class="btn btn-success" style="flex:1">
+                    <i class="fas fa-save"></i> Lưu
+                </button>
+                <button type="button" class="btn btn-danger" onclick="closeModal('packageModal')" style="flex:1">
+                    <i class="fas fa-times"></i> Hủy
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Log Workout Modal -->
+<div id="logWorkoutModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Ghi Nhận Buổi Tập</h2>
+            <span class="close-btn" onclick="closeModal('logWorkoutModal')">&times;</span>
+        </div>
+        <form id="logWorkoutForm">
+            <div class="form-group">
+                <label>Hội Viên *</label>
+                <select id="workoutMember" required></select>
+            </div>
+            <div class="form-group">
+                <label>Ngày Tập *</label>
+                <input type="date" id="workoutDateInput" required>
+            </div>
+            <div class="form-group">
+                <label>Bài Tập *</label>
+                <select id="workoutType" required>
+                    <option value="">Chọn bài tập</option>
+                    <option value="Cardio - Chạy bộ">🏃 Cardio - Chạy bộ</option>
+                    <option value="Cardio - Xe đạp">🚴 Cardio - Xe đạp</option>
+                    <option value="Tạ - Ngực">💪 Tạ - Ngực</option>
+                    <option value="Tạ - Lưng">🏋️ Tạ - Lưng</option>
+                    <option value="Tạ - Chân">🦵 Tạ - Chân</option>
+                    <option value="Yoga">🧘 Yoga</option>
+                    <option value="Boxing">🥊 Boxing</option>
+                    <option value="CrossFit">🔥 CrossFit</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Thời Gian (phút)</label>
+                <input type="number" id="workoutDuration">
+            </div>
+            <div class="form-group">
+                <label>Calo Đốt Cháy</label>
+                <input type="number" id="workoutCalories">
+            </div>
+            <div class="form-group">
+                <label>Ghi Chú</label>
+                <textarea id="workoutNotes" rows="2"></textarea>
+            </div>
+            <div class="btn-group">
+                <button type="submit" class="btn btn-success" style="flex:1">
+                    <i class="fas fa-save"></i> Lưu
+                </button>
+                <button type="button" class="btn btn-danger" onclick="closeModal('logWorkoutModal')" style="flex:1">
+                    <i class="fas fa-times"></i> Hủy
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- View Workouts Modal -->
+<div id="viewWorkoutsModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Lịch Sử Tập Luyện</h2>
+            <span class="close-btn" onclick="closeModal('viewWorkoutsModal')">&times;</span>
+        </div>
+        <div id="workoutHistoryContent"></div>
+    </div>
+</div>
+
+<div id="toastContainer"></div>
+
+<script>
+    const API_URL = 'http://localhost:5000/api';
+    let currentMemberId = null;
+
+    // Initialize
+    document.getElementById('currentDate').innerHTML = new Date().toLocaleDateString('vi-VN');
+    document.getElementById('workoutDate').valueAsDate = new Date();
+
+    // Show toast
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${message}`;
+        document.getElementById('toastContainer').appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    // Switch tabs
+    function switchTab(tab, element) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.sidebar nav li').forEach(l => l.classList.remove('active'));
+        document.getElementById(tab).classList.add('active');
+        if (element) element.classList.add('active');
+
+        const titles = {
+            dashboard: 'Tổng Quan',
+            members: 'Quản Lý Hội Viên',
+            packages: 'Quản Lý Gói Tập',
+            workouts: 'Lịch Tập Hàng Ngày',
+            settings: 'Cài Đặt'
+        };
+        document.getElementById('pageTitle').textContent = titles[tab] || 'ZFit';
+
+        if (tab === 'dashboard') loadDashboard();
+        if (tab === 'members') loadMembers();
+        if (tab === 'packages') loadPackages();
+        if (tab === 'workouts') loadWorkoutsByDate();
+        if (tab === 'settings') loadSettings();
+    }
+
+    // Theme toggle
+    function toggleTheme() {
+        const html = document.documentElement;
+        const current = html.getAttribute('data-theme') || 'light';
+        const newTheme = current === 'dark' ? 'light' : 'dark';
+        setTheme(newTheme);
+    }
+
+    function setTheme(theme) {
+        const html = document.documentElement;
+        html.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+        updateThemeButton();
+        loadSettings();
+    }
+
+    function updateThemeButton() {
+        const current = document.documentElement.getAttribute('data-theme') || 'light';
+        const btn = document.querySelector('.theme-toggle button');
+        if (btn) {
+            btn.innerHTML = `<i class="fas ${current === 'dark' ? 'fa-sun' : 'fa-moon'}"></i> ${current === 'dark' ? 'Chế Độ Sáng' : 'Chế Độ Tối'}`;
+        }
+    }
+
+    function loadSettings() {
+        document.querySelectorAll('.theme-choice-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.theme === (document.documentElement.getAttribute('data-theme') || 'light'));
+        });
+    }
+
+    function toggleSettingsPanel() {
+        document.getElementById('settingsPanel').classList.toggle('active');
+    }
+
+    // Close modal
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
+
+    // Load Dashboard
+    async function loadDashboard() {
+        try {
+            const response = await fetch(`${API_URL}/stats`);
+            const stats = await response.json();
+            
+            const statsGrid = document.getElementById('statsGrid');
+            statsGrid.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3>Tổng Hội Viên</h3>
+                        <p>${stats.totalMembers || 0}</p>
+                    </div>
+                    <div class="stat-icon"><i class="fas fa-users"></i></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3>Đang Hoạt Động</h3>
+                        <p>${stats.activeMembers || 0}</p>
+                    </div>
+                    <div class="stat-icon"><i class="fas fa-user-check"></i></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3>Doanh Thu Tháng</h3>
+                        <p>${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.revenue || 0)}</p>
+                    </div>
+                    <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3>Gói Tập</h3>
+                        <p>${stats.totalPackages || 0}</p>
+                    </div>
+                    <div class="stat-icon"><i class="fas fa-box"></i></div>
+                </div>
+            `;
+
+            // Load chart
+            const membersResponse = await fetch(`${API_URL}/members`);
+            const members = await membersResponse.json();
+            const monthlyData = {};
+            members.forEach(m => {
+                const month = new Date(m.register_date).toLocaleDateString('vi-VN', { month: 'short', year: 'numeric' });
+                monthlyData[month] = (monthlyData[month] || 0) + 1;
+            });
+
+            const ctx = document.getElementById('memberChart').getContext('2d');
+            const overviewGrid = document.getElementById('overviewGrid');
+            const today = new Date().toISOString().split('T')[0];
+            let workoutsCount = 0;
+            try {
+                const workoutResponse = await fetch(`${API_URL}/workouts/date/${today}`);
+                const workouts = await workoutResponse.json();
+                workoutsCount = Array.isArray(workouts) ? workouts.length : 0;
+            } catch (error) {
+                workoutsCount = 0;
+            }
+
+            const months = Object.keys(monthlyData);
+            const currentMonth = months[months.length - 1] || '-';
+            const previousMonth = months[months.length - 2] || '-';
+            const currentCount = monthlyData[currentMonth] || 0;
+            const previousCount = monthlyData[previousMonth] || 0;
+            const growthRate = previousCount > 0 ? Math.round(((currentCount - previousCount) / previousCount) * 100) : currentCount > 0 ? 100 : 0;
+            const retentionRate = stats.totalMembers ? Math.round((stats.activeMembers / stats.totalMembers) * 100) : 0;
+            const avgRevenue = stats.activeMembers ? Math.round(stats.revenue / stats.activeMembers) : 0;
+
+            overviewGrid.innerHTML = `
+                <div class="overview-card">
+                    <h4>Tăng trưởng hội viên tháng ${currentMonth}</h4>
+                    <p>Số hội viên mới trong tháng hiện tại.</p>
+                    <div class="overview-value">${currentCount}</div>
+                    <div class="overview-change ${growthRate >= 0 ? 'positive' : 'negative'}">
+                        <i class="fas fa-arrow-${growthRate >= 0 ? 'up' : 'down'}"></i>
+                        ${growthRate >= 0 ? '+' : ''}${growthRate}% so với tháng trước
+                    </div>
+                </div>
+                <div class="overview-card">
+                    <h4>Lượng khách book PT hôm nay</h4>
+                    <p>Số buổi tập đã được ghi nhận cho ngày hiện tại.</p>
+                    <div class="overview-value">${workoutsCount}</div>
+                    <div class="overview-change ${workoutsCount > 0 ? 'positive' : 'negative'}">
+                        <i class="fas fa-dumbbell"></i>
+                        ${workoutsCount > 0 ? 'Hoạt động' : 'Chưa có lịch'}
+                    </div>
+                </div>
+                <div class="overview-card">
+                    <h4>Tỷ lệ hoạt động</h4>
+                    <p>Phần trăm hội viên vẫn đang hoạt động.</p>
+                    <div class="overview-value">${retentionRate}%</div>
+                    <div class="overview-change ${retentionRate >= 70 ? 'positive' : 'negative'}">
+                        <i class="fas fa-chart-pie"></i>
+                        ${retentionRate >= 70 ? 'Ổn định' : 'Cần cải thiện'}
+                    </div>
+                </div>
+                <div class="overview-card">
+                    <h4>Doanh thu trung bình mỗi hội viên</h4>
+                    <p>Doanh thu chia đều theo số hội viên đang hoạt động.</p>
+                    <div class="overview-value">${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(avgRevenue)}</div>
+                    <div class="overview-change ${avgRevenue >= 0 ? 'positive' : 'negative'}">
+                        <i class="fas fa-wallet"></i>
+                        Trung bình/khách
+                    </div>
+                </div>
+            `;
+
+            if (window.memberChart) window.memberChart.destroy();
+            window.memberChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Object.keys(monthlyData),
+                    datasets: [{
+                        label: 'Số Hội Viên Mới',
+                        data: Object.values(monthlyData),
+                        borderColor: '#ff4757',
+                        backgroundColor: 'rgba(255, 71, 87, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top' }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Error loading dashboard:', error);
+            showToast('Lỗi tải dữ liệu', 'error');
+        }
+    }
+
+    // Load Members
+    async function loadMembers() {
+        const search = document.getElementById('memberSearch')?.value || '';
+        try {
+            const response = await fetch(`${API_URL}/members?search=${search}`);
+            const members = await response.json();
+            
+            const tbody = document.getElementById('membersTableBody');
+            if (members.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center">Không có dữ liệu</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = members.map(m => `
+                <tr>
+                    <td>${m.id}</td>
+                    <td><strong>${m.full_name}</strong></td>
+                    <td>${m.phone}</td>
+                    <td>${m.email || '-'}</td>
+                    <td>${m.package_name || '-'}</td>
+                    <td>${new Date(m.register_date).toLocaleDateString('vi-VN')}</td>
+                    <td>${new Date(m.expiry_date).toLocaleDateString('vi-VN')}</td>
+                    <td><button class="view-workout-btn" onclick="viewMemberWorkouts(${m.id})"><i class="fas fa-history"></i> Xem lịch sử</button></td>
+                    <td><span class="badge ${m.status === 'Active' ? 'badge-active' : 'badge-inactive'}">${m.status === 'Active' ? 'Hoạt động' : 'Hết hạn'}</span></td>
+                    <td>
+                        <button class="btn btn-warning" style="padding: 5px 10px; margin-right: 5px;" onclick="editMember(${m.id})"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-danger" style="padding: 5px 10px;" onclick="deleteMember(${m.id})"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (error) {
+            console.error('Error loading members:', error);
+            showToast('Lỗi tải danh sách hội viên', 'error');
+        }
+    }
+
+    // Load Packages
+    async function loadPackages() {
+        const search = document.getElementById('packageSearch')?.value || '';
+        try {
+            const response = await fetch(`${API_URL}/packages?search=${search}`);
+            const packages = await response.json();
+            
+            const tbody = document.getElementById('packagesTableBody');
+            if (packages.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Không có dữ liệu</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = packages.map(p => `
+                <tr>
+                    <td>${p.id}</td>
+                    <td><strong>${p.name}</strong></td>
+                    <td>${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.price)}</td>
+                    <td>${p.duration} tháng</td>
+                    <td>${p.description || '-'}</td>
+                    <td>
+                        <button class="btn btn-warning" style="padding: 5px 10px; margin-right: 5px;" onclick="editPackage(${p.id})"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-danger" style="padding: 5px 10px;" onclick="deletePackage(${p.id})"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (error) {
+            console.error('Error loading packages:', error);
+            showToast('Lỗi tải danh sách gói tập', 'error');
+        }
+    }
+
+    // Load Workouts by Date
+    async function loadWorkoutsByDate() {
+        const date = document.getElementById('workoutDate').value;
+        if (!date) return;
+        
+        try {
+            const response = await fetch(`${API_URL}/workouts/date/${date}`);
+            const workouts = await response.json();
+            
+            const tbody = document.getElementById('workoutsTableBody');
+            if (workouts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Không có buổi tập nào trong ngày này</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = workouts.map(w => `
+                <tr>
+                    <td><strong>${w.full_name}</strong></td>
+                    <td>${w.phone}</td>
+                    <td><span class="badge badge-active">${w.workout_type}</span></td>
+                    <td>${w.duration ? w.duration + ' phút' : '-'}</td>
+                    <td>${w.calories_burned ? w.calories_burned + ' kcal' : '-'}</td>
+                    <td>${w.notes || '-'}</td>
+                    <td>${new Date(w.created_at).toLocaleTimeString('vi-VN')}</td>
+                </tr>
+            `).join('');
+        } catch (error) {
+            console.error('Error loading workouts:', error);
+            showToast('Lỗi tải lịch tập', 'error');
+        }
+    }
+
+    // View member workouts history
+    async function viewMemberWorkouts(memberId) {
+        try {
+            const response = await fetch(`${API_URL}/workouts/${memberId}`);
+            const workouts = await response.json();
+            
+            const content = document.getElementById('workoutHistoryContent');
+            if (workouts.length === 0) {
+                content.innerHTML = '<p style="text-align:center">Chưa có lịch sử tập luyện</p>';
+            } else {
+                content.innerHTML = workouts.map(w => `
+                    <div class="workout-detail">
+                        <h4><i class="fas fa-calendar-alt"></i> ${new Date(w.workout_date).toLocaleDateString('vi-VN')}</h4>
+                        <p><strong>Bài tập:</strong> ${w.workout_type}</p>
+                        <p><strong>Thời gian:</strong> ${w.duration || 'N/A'} phút</p>
+                        <p><strong>Calo:</strong> ${w.calories_burned || 'N/A'} kcal</p>
+                        <p><strong>Ghi chú:</strong> ${w.notes || 'Không có'}</p>
+                    </div>
+                `).join('');
+            }
+            
+            openModal('viewWorkoutsModal');
+        } catch (error) {
+            console.error('Error loading workout history:', error);
+            showToast('Lỗi tải lịch sử tập luyện', 'error');
+        }
+    }
+
+    // Open modals
+    function openMemberModal() {
+        document.getElementById('memberForm').reset();
+        document.getElementById('memberId').value = '';
+        document.getElementById('memberModalTitle').innerHTML = 'Thêm Hội Viên';
+        document.getElementById('memberRegDate').valueAsDate = new Date();
+        loadPackagesToSelect('memberPackage');
+        openModal('memberModal');
+    }
+
+    function openPackageModal() {
+        document.getElementById('packageForm').reset();
+        document.getElementById('packageId').value = '';
+        document.getElementById('packageModalTitle').innerHTML = 'Thêm Gói Tập';
+        openModal('packageModal');
+    }
+
+    function openLogWorkoutModal() {
+        loadMembersToSelect('workoutMember');
+        document.getElementById('workoutDateInput').valueAsDate = new Date();
+        openModal('logWorkoutModal');
+    }
+
+    async function loadPackagesToSelect(selectId) {
+        try {
+            const response = await fetch(`${API_URL}/packages`);
+            const packages = await response.json();
+            const select = document.getElementById(selectId);
+            select.innerHTML = '<option value="">Chọn gói tập</option>' + 
+                packages.map(p => `<option value="${p.id}">${p.name} - ${new Intl.NumberFormat('vi-VN').format(p.price)}đ</option>`).join('');
+        } catch (error) {
+            console.error('Error loading packages:', error);
+        }
+    }
+
+    async function loadMembersToSelect(selectId) {
+        try {
+            const response = await fetch(`${API_URL}/members`);
+            const members = await response.json();
+            const select = document.getElementById(selectId);
+            select.innerHTML = '<option value="">Chọn hội viên</option>' + 
+                members.map(m => `<option value="${m.id}">${m.full_name} - ${m.phone}</option>`).join('');
+        } catch (error) {
+            console.error('Error loading members:', error);
+        }
+    }
+
+    // Save member
+    document.getElementById('memberForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('memberId').value;
+        const data = {
+            full_name: document.getElementById('memberName').value,
+            phone: document.getElementById('memberPhone').value,
+            email: document.getElementById('memberEmail').value,
+            package_id: parseInt(document.getElementById('memberPackage').value),
+            register_date: document.getElementById('memberRegDate').value
+        };
+
+        try {
+            const url = id ? `${API_URL}/members/${id}` : `${API_URL}/members`;
+            const method = id ? 'PUT' : 'POST';
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                showToast(id ? 'Cập nhật thành công' : 'Thêm hội viên thành công');
+                closeModal('memberModal');
+                loadMembers();
+                loadDashboard();
+            } else {
+                showToast('Lỗi lưu dữ liệu', 'error');
+            }
+        } catch (error) {
+            console.error('Error saving member:', error);
+            showToast('Lỗi kết nối', 'error');
+        }
+    });
+
+    // Save package
+    document.getElementById('packageForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('packageId').value;
+        const data = {
+            name: document.getElementById('packageName').value,
+            price: parseInt(document.getElementById('packagePrice').value),
+            duration: parseInt(document.getElementById('packageDuration').value),
+            description: document.getElementById('packageDesc').value
+        };
+
+        try {
+            const url = id ? `${API_URL}/packages/${id}` : `${API_URL}/packages`;
+            const method = id ? 'PUT' : 'POST';
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                showToast(id ? 'Cập nhật thành công' : 'Thêm gói tập thành công');
+                closeModal('packageModal');
+                loadPackages();
+                loadDashboard();
+            } else {
+                showToast('Lỗi lưu dữ liệu', 'error');
+            }
+        } catch (error) {
+            console.error('Error saving package:', error);
+            showToast('Lỗi kết nối', 'error');
+        }
+    });
+
+    // Log workout
+    document.getElementById('logWorkoutForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = {
+            member_id: parseInt(document.getElementById('workoutMember').value),
+            workout_date: document.getElementById('workoutDateInput').value,
+            workout_type: document.getElementById('workoutType').value,
+            duration: parseInt(document.getElementById('workoutDuration').value) || null,
+            calories_burned: parseInt(document.getElementById('workoutCalories').value) || null,
+            notes: document.getElementById('workoutNotes').value
+        };
+
+        try {
+            const response = await fetch(`${API_URL}/workouts`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                showToast('Ghi nhận buổi tập thành công');
+                closeModal('logWorkoutModal');
+                loadWorkoutsByDate();
+            } else {
+                showToast('Lỗi ghi nhận', 'error');
+            }
+        } catch (error) {
+            console.error('Error logging workout:', error);
+            showToast('Lỗi kết nối', 'error');
+        }
+    });
+
+    // Edit functions
+    async function editMember(id) {
+        try {
+            const response = await fetch(`${API_URL}/members`);
+            const members = await response.json();
+            const member = members.find(m => m.id === id);
+            if (member) {
+                document.getElementById('memberId').value = member.id;
+                document.getElementById('memberName').value = member.full_name;
+                document.getElementById('memberPhone').value = member.phone;
+                document.getElementById('memberEmail').value = member.email || '';
+                document.getElementById('memberRegDate').value = member.register_date;
+                await loadPackagesToSelect('memberPackage');
+                document.getElementById('memberPackage').value = member.package_id;
+                document.getElementById('memberModalTitle').innerHTML = 'Sửa Hội Viên';
+                openModal('memberModal');
+            }
+        } catch (error) {
+            console.error('Error editing member:', error);
+            showToast('Lỗi tải thông tin', 'error');
+        }
+    }
+
+    async function editPackage(id) {
+        try {
+            const response = await fetch(`${API_URL}/packages`);
+            const packages = await response.json();
+            const pkg = packages.find(p => p.id === id);
+            if (pkg) {
+                document.getElementById('packageId').value = pkg.id;
+                document.getElementById('packageName').value = pkg.name;
+                document.getElementById('packagePrice').value = pkg.price;
+                document.getElementById('packageDuration').value = pkg.duration;
+                document.getElementById('packageDesc').value = pkg.description || '';
+                document.getElementById('packageModalTitle').innerHTML = 'Sửa Gói Tập';
+                openModal('packageModal');
+            }
+        } catch (error) {
+            console.error('Error editing package:', error);
+            showToast('Lỗi tải thông tin', 'error');
+        }
+    }
+
+    // Delete functions
+    async function deleteMember(id) {
+        if (confirm('Bạn có chắc muốn xóa hội viên này?')) {
+            try {
+                const response = await fetch(`${API_URL}/members/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    showToast('Xóa hội viên thành công');
+                    loadMembers();
+                    loadDashboard();
+                } else {
+                    showToast('Lỗi xóa', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting member:', error);
+                showToast('Lỗi kết nối', 'error');
+            }
+        }
+    }
+
+    async function deletePackage(id) {
+        if (confirm('Bạn có chắc muốn xóa gói tập này?')) {
+            try {
+                const response = await fetch(`${API_URL}/packages/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    showToast('Xóa gói tập thành công');
+                    loadPackages();
+                    loadDashboard();
+                } else {
+                    showToast('Lỗi xóa', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting package:', error);
+                showToast('Lỗi kết nối', 'error');
+            }
+        }
+    }
+
+    // Export to Excel
+    function exportToExcel(type) {
+        if (type === 'members') {
+            const table = document.querySelector('#members table');
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.table_to_sheet(table);
+            XLSX.utils.book_append_sheet(wb, ws, 'HoiVien');
+            XLSX.writeFile(wb, `hoi_vien_${new Date().toISOString().split('T')[0]}.xlsx`);
+        } else if (type === 'packages') {
+            const table = document.querySelector('#packages table');
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.table_to_sheet(table);
+            XLSX.utils.book_append_sheet(wb, ws, 'GoiTap');
+            XLSX.writeFile(wb, `goi_tap_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+    }
+
+    function refreshMembers() {
+        document.getElementById('memberSearch').value = '';
+        loadMembers();
+    }
+
+    function openModal(modalId) {
+        document.getElementById(modalId).style.display = 'flex';
+    }
+
+    // Load initial data
+    loadDashboard();
+    loadMembers();
+    loadPackages();
+    loadSettings();
+
+    // Check saved theme
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeButton();
+</script>
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+</body>
+</html>
