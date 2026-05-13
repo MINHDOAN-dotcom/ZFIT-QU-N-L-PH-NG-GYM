@@ -869,6 +869,9 @@
             font-size: 14px;
         }
 
+        /* Xóa thông báo đỏ trùng lặp (toast-error cùng vị trí) */
+        .toast.toast-error { display: flex; }
+
         @keyframes slideIn {
             from {
                 transform: translateX(100%);
@@ -1050,7 +1053,8 @@
             <i class="fas fa-boxes"></i>
             <span>Gói Tập</span>
         </li>
-        <li onclick="switchTab('workouts', this)">
+        <!-- TẠM ẨN: Lịch Tập -->
+        <li onclick="switchTab('workouts', this)" style="display: none;">
             <i class="fas fa-calendar-check"></i>
             <span>Lịch Tập</span>
         </li>
@@ -1347,10 +1351,17 @@
 
     // Show toast
     function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+
+        // Chỉ xóa toast-error cũ để tránh hiện chồng nhiều thông báo đỏ cùng lúc
+        if (type === 'error') {
+            container.querySelectorAll('.toast.toast-error').forEach(t => t.remove());
+        }
+
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
         toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${message}`;
-        document.getElementById('toastContainer').appendChild(toast);
+        container.appendChild(toast);
         setTimeout(() => toast.remove(), 3000);
     }
 
